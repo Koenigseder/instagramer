@@ -13,6 +13,8 @@ PASSWORD = os.getenv("REDDIT_PASSWORD")
 CLIENT_ID = os.getenv("REDDIT_CLIENT_ID")
 SECRET_TOKEN = os.getenv("REDDIT_SECRET_TOKEN")
 
+MEMES_TO_DOWNLOAD = 6
+
 
 class Reddit:
 
@@ -52,7 +54,7 @@ class Reddit:
                     if not db_client.was_this_meme_already_downloaded(post['data']['url_overridden_by_dest']):
                         list_of_memes.append((post['data']['url_overridden_by_dest'], post['data']['title']))
                         number_of_posts += 1
-                        if number_of_posts > 5:
+                        if number_of_posts >= MEMES_TO_DOWNLOAD:
                             break
 
         return list_of_memes
