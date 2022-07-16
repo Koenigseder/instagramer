@@ -48,7 +48,7 @@ def upload_meme():
 
     if os.path.exists(path):
         for file in listdir(path):
-            if file.endswith(".mp4") or file.endswith(".gif"):
+            if file.endswith(".mp4") or file.endswith(".gif") or file.endswith(".jpg"):
                 try:
                     db_client.open_connection()
                     caption = db_client.get_title_of_meme(uuid.UUID(file.split(".")[0]))

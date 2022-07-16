@@ -49,8 +49,8 @@ class Reddit:
         for post in res.json()["data"]["children"]:
             if "url_overridden_by_dest" in post["data"] and "title" in post["data"]:
                 if post['data']['url_overridden_by_dest'].endswith(".gif") \
-                        or post['data']['url_overridden_by_dest'].endswith(".mp4"):
-                        # or post['data']['url_overridden_by_dest'].endswith(".jpg"):
+                        or post['data']['url_overridden_by_dest'].endswith(".mp4") \
+                        or post['data']['url_overridden_by_dest'].endswith(".jpg"):
                     if not db_client.was_this_meme_already_downloaded(post['data']['url_overridden_by_dest']):
                         list_of_memes.append((post['data']['url_overridden_by_dest'], post['data']['title']))
                         number_of_posts += 1
@@ -71,6 +71,8 @@ class Reddit:
             filename = f"{meme_uuid}.gif"
         elif url.endswith(".mp4"):
             filename = f"{meme_uuid}.mp4"
+        elif url.endswith(".jpg"):
+            filename = f"{meme_uuid}.jpg"
 
         if filename != "":
             urllib.request.urlretrieve(url, os.path.join(path, filename))
