@@ -1,13 +1,20 @@
+### Table of Contents
+- [About](#instagramer)
+- [How to set up](#how-to-set-up)
+  * [Reddit requirements](#reddit-requirements)
+  * [Local requirements](#local-requirements)
+  * [Configuration](#configuration)
+
 # Instagramer
 
 This is a bot that downloads everyday the top memes from the Subreddit [r/memes](https://www.reddit.com/r/memes) and reposts them on Instagram.
-So far the bot can only post videos.
+The bot can post images and videos.
 
 You can find the example account here: [@the_real_lord_of_the_memes](https://www.instagram.com/the_real_lord_of_the_memes/?igshid=YmMyMTA2M2Y%3D)
 
-## How to setup
+# How to set up
 
-### Reddit requirements
+## Reddit requirements
 
 In order to download memes from Reddit you need to create an account. After this you need to create an Reddit-app on this page: [https://www.reddit.com/prefs/apps](https://www.reddit.com/prefs/apps).
 
@@ -27,7 +34,7 @@ Later on we need these parameters:
 
 **Congratulations :tada:! The first steps are done!**
 
-### Local requirements
+## Local requirements
 
 This bot makes use of a PostgreSQL database in order to avoid downloading the same meme again. It logs every downloaded meme and checks if it was already downloaded.
 For that you need to have a local PostgreSQL installation, a database and a table called `Log`. This is a SQL statement you can use to generate the table:
@@ -50,7 +57,7 @@ Are all steps completed you can now test if it works by running `python main.py`
 
 The memes are going to be cached in the `resource` folder, so do not delete this folder! After two days every unnecessary folder in it will be deleted to keep a better overview and structure.
 
-### Configuring
+## Configuration
 
 If you want to change the schedule times you can simply do that be adjusting these parameters in `main.py` on the bottom of the file:
 ```python
