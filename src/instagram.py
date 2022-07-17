@@ -25,7 +25,10 @@ class Instagram:
             clip.write_videofile(f"{path}.mp4")
             self.client.video_upload(f"{path}.mp4", caption)
 
-        else:
+        elif filename.endswith(".mp4"):
             self.client.video_upload(path, caption)
+
+        elif filename.endswith(".jpg"):
+            self.client.photo_upload(path, caption)
 
         self.client.logout()
