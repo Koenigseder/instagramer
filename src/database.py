@@ -34,7 +34,7 @@ class Database:
     def close_connection(self) -> None:
         self.conn.close()
 
-    def was_this_meme_already_downloaded(self, url: str) -> bool:
+    def was_this_post_already_downloaded(self, url: str) -> bool:
         with self.conn.cursor() as cursor:
             cursor.execute("""
             SELECT *
@@ -47,13 +47,13 @@ class Database:
                 return False
         return True
 
-    def get_title_of_meme(self, meme_uuid: uuid.UUID) -> str:
+    def get_title_of_post(self, post_uuid: uuid.UUID) -> str:
         with self.conn.cursor() as cursor:
             cursor.execute("""
             SELECT "title"
             FROM "Log"
             WHERE "uuid" = %s
-            """, (str(meme_uuid),))
+            """, (str(post_uuid),))
             self.conn.commit()
 
             return cursor.fetchone()[0]
@@ -68,20 +68,20 @@ class Database:
             self.conn.commit()
         return self.uuid
 
-    def insert_log_finished(self, meme_uuid: uuid.UUID) -> None:
+    def insert_log_finished(self, post_uuid: uuid.UUID) -> None:
         with self.conn.cursor() as cursor:
             cursor.execute("""
             UPDATE "Log"
             SET "finishedAt" = %s, "downloadStatus" = %s
             WHERE "uuid" = %s
-            """, (datetime.utcnow(), "Completed", str(meme_uuid)))
+            """, (datetime.utcnow(), "Completed", str(post_uuid)))
             self.conn.commit()
 
-    def insert_log_failed(self, meme_uuid: uuid.UUID) -> None:
+    def insert_log_failed(self, post_uuid: uuid.UUID) -> None:
         with self.conn.cursor() as cursor:
             cursor.execute("""
             UPDATE "Log"
             SET "finishedAt" = %s, "downloadStatus" = %s
             WHERE "uuid" = %s
-            """, (datetime.utcnow(), "Failed", str(meme_uuid)))
+            """, (datetime.utcnow(), "Failed", str(post_uuid)))
             self.conn.commit()
