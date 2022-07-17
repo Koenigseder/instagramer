@@ -8,6 +8,7 @@ import time
 from os import listdir
 import schedule
 import logging
+from dotenv import load_dotenv
 
 
 db_client = database.Database()
@@ -16,42 +17,46 @@ instagram_client = instagram.Instagram()
 
 logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)
 
+load_dotenv()
 
-def download_memes():
-    logging.info("Downloading memes...")
+SUBREDDIT = os.getenv("SUBREDDIT")
+
+
+def download_posts():
+    logging.info("Downloading posts...")
     db_client.open_connection()
 
     reddit_client.auth_for_reddit()
-    list_of_memes = reddit_client.get_list_of_urls_and_titles_of_daily_top_memes("memes", db_client)
+    list_of_posts = reddit_client.get_list_of_urls_and_titles_of_daily_top_posts(SUBREDDIT, db_client)
 
-    if len(list_of_memes) > 0:
-        for meme in list_of_memes:
-            url, title = meme
-            meme_uuid = db_client.insert_log_started(url, title)
+    if len(list_of_posts) > 0:
+        for post in list_of_posts:
+            url, title = post
+            post_uuid = db_client.insert_log_started(url, title)
 
             try:
-                reddit_client.download_meme(url, str(date.today()), meme_uuid)
-                db_client.insert_log_finished(meme_uuid)
+                reddit_client.download_post(url, str(date.today()), post_uuid)
+                db_client.insert_log_finished(post_uuid)
 
             except BaseException as e:
-                db_client.insert_log_failed(meme_uuid)
-                logging.error(f"An error occurred while downloading a meme: {e}")
+                db_client.insert_log_failed(post_uuid)
+                logging.error(f"An error occurred while downloading a post: {e}")
 
     db_client.close_connection()
     logging.info("Download finished!")
 
 
-def upload_meme():
-    logging.info("Uploading meme to Instagram...")
+def upload_post():
+    logging.info("Uploading post to Instagram...")
     folder = str(date.today() - timedelta(days=1))
     path = os.path.join(os.pardir, "resources", folder)
 
     if os.path.exists(path):
         for file in listdir(path):
-            if file.endswith(".mp4") or file.endswith(".gif"):
+            if file.endswith(".mp4") or file.endswith(".gif") or file.endswith(".jpg"):
                 try:
                     db_client.open_connection()
-                    caption = db_client.get_title_of_meme(uuid.UUID(file.split(".")[0]))
+                    caption = db_client.get_title_of_post(uuid.UUID(file.split(".")[0]))
                     db_client.close_connection()
 
                     instagram_client.upload_to_instagram(folder, file, caption)
@@ -62,7 +67,7 @@ def upload_meme():
                     break
 
                 except BaseException as e:
-                    logging.error(f"An error occurred while uploading the meme to Instagram: {e}")
+                    logging.error(f"An error occurred while uploading the post to Instagram: {e}")
                     break
     else:
         logging.warning("No such directory!")
@@ -80,16 +85,16 @@ def remove_dir():
         logging.error(e)
 
 
-schedule.every().day.at("22:00").do(download_memes)
+schedule.every().day.at("22:00").do(download_posts)
 
 schedule.every().day.at("23:00").do(remove_dir)
 
-schedule.every().day.at("06:00").do(upload_meme)
-schedule.every().day.at("09:00").do(upload_meme)
-schedule.every().day.at("12:00").do(upload_meme)
-schedule.every().day.at("15:00").do(upload_meme)
-schedule.every().day.at("18:00").do(upload_meme)
-schedule.every().day.at("21:00").do(upload_meme)
+schedule.every().day.at("06:00").do(upload_post)
+schedule.every().day.at("09:00").do(upload_post)
+schedule.every().day.at("12:00").do(upload_post)
+schedule.every().day.at("15:00").do(upload_post)
+schedule.every().day.at("18:00").do(upload_post)
+schedule.every().day.at("21:00").do(upload_post)
 
 
 def start_instagramer():
@@ -101,6 +106,6 @@ def start_instagramer():
 
 if __name__ == "__main__":
     start_instagramer()
-    # download_memes()
-    # upload_meme()
+    # download_posts()
+    # upload_post()
     # remove_dir()
