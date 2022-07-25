@@ -59,10 +59,14 @@ class Reddit:
         return list_of_posts
 
     def download_post(self, url: str, folder: str, post_uuid: uuid.UUID):
-        path = os.path.join(os.pardir, "resources", folder)
+        resource_path = os.path.join(os.pardir, "resources")
+        date_folder = os.path.join(resource_path, folder)
 
-        if not os.path.isdir(path):
-            os.mkdir(path)
+        if not os.path.isdir(resource_path):
+            os.mkdir(resource_path)
+
+        if not os.path.isdir(date_folder):
+            os.mkdir(date_folder)
 
         filename = ""
 
@@ -74,4 +78,4 @@ class Reddit:
             filename = f"{post_uuid}.jpg"
 
         if filename != "":
-            urllib.request.urlretrieve(url, os.path.join(path, filename))
+            urllib.request.urlretrieve(url, os.path.join(date_folder, filename))
