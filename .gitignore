@@ -6,6 +6,10 @@ __pycache__/
 # C extensions
 *.so
 
+# Just to ensure no resources get commited
+resources/
+!resources/This folder is used to cache the memes.txt
+
 # IntelliJ
 .idea/
 
