@@ -14,10 +14,9 @@ class Instagram:
 
     def __init__(self):
         self.client = Client()
-
-    def upload_to_instagram(self, folder: str, filename: str, caption: str):
         self.client.login(USERNAME, PASSWORD)
 
+    def upload_to_instagram(self, folder: str, filename: str, caption: str):
         path = os.path.join(os.pardir, "resources", folder, filename)
 
         if filename.endswith(".gif"):
