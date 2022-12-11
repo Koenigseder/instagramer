@@ -14,9 +14,19 @@ class Instagram:
 
     def __init__(self):
         self.client = Client()
+
+    def login(self):
+        if os.path.exists("./session.json"):
+            self.client.load_settings("./session.json")
+
         self.client.login(USERNAME, PASSWORD)
+        self.client.get_timeline_feed()
+
+        self.client.dump_settings("./session.json")
 
     def upload_to_instagram(self, folder: str, filename: str, caption: str):
+        self.login()
+
         path = os.path.join(os.pardir, "resources", folder, filename)
 
         if filename.endswith(".gif"):
@@ -30,4 +40,4 @@ class Instagram:
         elif filename.endswith(".jpg"):
             self.client.photo_upload(path, caption)
 
-        self.client.logout()
+        # self.client.logout()
