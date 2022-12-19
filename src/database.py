@@ -116,7 +116,7 @@ class Database:
             else:
                 cursor.execute("""
                 UPDATE "PostLog"
-                SET "startedAt" = %s, "finishedAt" = %s, "postStatus" = %s, errorMsg = %s
+                SET "startedAt" = %s, "finishedAt" = %s, "postStatus" = %s, "errorMsg" = %s
                 WHERE "uuid" = %s
                 """, (datetime.utcnow(), None, "Posting", None, str(post_uuid)))
 
