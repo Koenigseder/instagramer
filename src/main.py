@@ -32,18 +32,18 @@ def download_posts():
     if len(list_of_posts) > 0:
         for post in list_of_posts:
             url, title = post
-            post_uuid = db_client.insert_log_started(url, title)
+            post_uuid = db_client.insert_download_log_started(url, title)
 
             try:
                 reddit_client.download_post(url, str(date.today()), post_uuid)
-                db_client.insert_log_finished(post_uuid)
+                db_client.insert_download_log_finished(post_uuid)
+                logging.info("Download finished!")
 
             except BaseException as e:
-                db_client.insert_log_failed(post_uuid)
+                db_client.insert_download_log_failed(post_uuid)
                 logging.error(f"An error occurred while downloading a post: {e}")
 
     db_client.close_connection()
-    logging.info("Download finished!")
 
 
 def upload_post():
@@ -54,21 +54,28 @@ def upload_post():
     if os.path.exists(path):
         for file in listdir(path):
             if file.endswith(".mp4") or file.endswith(".gif") or file.endswith(".jpg"):
+                post_uuid: uuid.UUID = uuid.UUID(file.split(".")[0])
+
+                db_client.open_connection()
+                db_client.insert_post_log_started(post_uuid)
+
                 try:
-                    db_client.open_connection()
-                    caption = db_client.get_title_of_post(uuid.UUID(file.split(".")[0]))
-                    db_client.close_connection()
+                    caption = db_client.get_title_of_post(post_uuid)
 
                     instagram_client.upload_to_instagram(folder, file, caption)
                     for item in listdir(path):
                         if file.split(".")[0] in item:
                             os.remove(os.path.join(path, item))
+
+                    db_client.insert_post_log_finished(post_uuid)
                     logging.info("Upload finished!")
-                    break
 
                 except BaseException as e:
+                    db_client.insert_post_log_failed(post_uuid, str(e))
                     logging.error(f"An error occurred while uploading the post to Instagram: {e}")
-                    break
+
+                db_client.close_connection()
+                break
     else:
         logging.warning("No such directory!")
 
@@ -98,6 +105,8 @@ schedule.every().day.at("21:00").do(upload_post)
 
 
 def start_instagramer():
+    db_client.configure_db()
+
     logging.info("### Instagramer started! ###")
     while True:
         schedule.run_pending()
