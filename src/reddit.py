@@ -5,7 +5,6 @@ from database import Database
 import os
 from dotenv import load_dotenv
 
-
 load_dotenv()
 
 USERNAME = os.getenv("REDDIT_USERNAME")
@@ -40,7 +39,8 @@ class Reddit:
         except BaseException as e:
             print(f"An error occurred for auth to Reddit: {e}")
 
-    def get_list_of_urls_and_titles_of_daily_top_posts(self, subreddit: str, db_client: Database) -> list[tuple[str, str]]:
+    def get_list_of_urls_and_titles_of_daily_top_posts(self, subreddit: str, db_client: Database,
+                                                       get_only_single_post=False) -> list[tuple[str, str]]:
         res = requests.get(f"https://oauth.reddit.com/{subreddit}/top?t=day", headers=self.headers)
 
         list_of_posts: list[tuple[str, str]] = []
@@ -53,7 +53,7 @@ class Reddit:
                     if not db_client.was_this_post_already_downloaded(post['data']['url_overridden_by_dest']):
                         list_of_posts.append((post['data']['url_overridden_by_dest'], post['data']['title']))
                         number_of_posts += 1
-                        if number_of_posts >= POSTS_TO_DOWNLOAD:
+                        if number_of_posts >= (1 if get_only_single_post else POSTS_TO_DOWNLOAD):
                             break
 
         return list_of_posts
