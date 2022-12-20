@@ -5,20 +5,26 @@ import database
 import reddit
 import instagram
 import time
+import discord
 from os import listdir
 import schedule
 import logging
 from dotenv import load_dotenv
 
-db_client = database.Database()
-reddit_client = reddit.Reddit()
-instagram_client = instagram.Instagram()
-
 logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)
 
 load_dotenv()
-
 SUBREDDIT = os.getenv("SUBREDDIT")
+DISCORD_WEBHOOK = None if os.getenv("DISCORD_WEBHOOK").strip() == "" else os.getenv("DISCORD_WEBHOOK")
+
+db_client = database.Database()
+reddit_client = reddit.Reddit()
+instagram_client = instagram.Instagram()
+discord_client = discord.Discord(DISCORD_WEBHOOK) if DISCORD_WEBHOOK else None
+
+INFO_COLOR = "03b2f8"
+SUCCESS_COLOR = "03a306"
+ERROR_COLOR = "a30303"
 
 
 def download_posts(download_only_single_post=False):
@@ -28,6 +34,8 @@ def download_posts(download_only_single_post=False):
     reddit_client.auth_for_reddit()
     list_of_posts = reddit_client.get_list_of_urls_and_titles_of_daily_top_posts(SUBREDDIT, db_client,
                                                                                  download_only_single_post)
+
+    error_count = 0
 
     if len(list_of_posts) > 0:
         for post in list_of_posts:
@@ -46,7 +54,21 @@ def download_posts(download_only_single_post=False):
                 db_client.insert_download_log_failed(post_uuid)
                 logging.error(f"An error occurred while downloading a post: {e}")
 
+                error_count += 1
+
+                if discord_client:
+                    discord_client.set_embed("Download not successful!",
+                                             f"I was not able to download a new post.\nReason: **{str(e)}**",
+                                             ERROR_COLOR)
+                    discord_client.send_message()
+
     db_client.close_connection()
+
+    if discord_client:
+        discord_client.set_embed("Download status",
+                                 "🎉 Download successful! 🎉" if error_count <= 0 else "🚨 Download not successful! 🚨",
+                                 SUCCESS_COLOR if error_count <= 0 else ERROR_COLOR)
+        discord_client.send_message()
 
 
 def upload_post():
@@ -73,9 +95,19 @@ def upload_post():
                     db_client.insert_post_log_finished(post_uuid)
                     logging.info("Upload finished!")
 
+                    if discord_client:
+                        discord_client.set_embed("Post status", "🎉 Post uploaded! 🎉", SUCCESS_COLOR)
+                        discord_client.send_message()
+
                 except BaseException as e:
                     db_client.insert_post_log_failed(post_uuid, str(e))
                     logging.error(f"An error occurred while uploading the post to Instagram: {e}")
+
+                    if discord_client:
+                        discord_client.set_embed("Post status",
+                                                 f"🚨 Error while uploading post! 🚨\n**{str(e)}**",
+                                                 ERROR_COLOR)
+                        discord_client.send_message()
 
                     if str(e) == "Uploaded image isn't in an allowed aspect ratio":
                         logging.info("Getting new post and retrying...")
@@ -103,6 +135,12 @@ def remove_dir():
 
     except BaseException as e:
         logging.error(e)
+
+        if discord_client:
+            discord_client.set_embed("Delete error",
+                                     f"🚨 Error while deleting old directory! 🚨\n**{str(e)}**",
+                                     ERROR_COLOR)
+            discord_client.send_message()
 
 
 schedule.every().day.at("22:00").do(download_posts)

@@ -10,6 +10,7 @@ moviepy = "*"
 psycopg2-binary = "*"
 schedule = "*"
 python-dotenv = "*"
+discord-webhook = "*"
 
 [dev-packages]
 
