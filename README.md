@@ -37,10 +37,10 @@ Later on we need these parameters:
 
 ## Local requirements
 
-This bot makes use of a PostgreSQL database in order to avoid downloading the same post again. It logs every downloaded post and checks if it was already downloaded.
-For that you need to have a local PostgreSQL installation, a database and a table called `Log`. This is a SQL statement you can use to generate the table:
+This bot makes use of a PostgreSQL database in order to avoid downloading and uploading the same post again. It logs every downloaded and uploaded post and checks if it was already downloaded or uploaded.
+For that you need to have a local PostgreSQL installation, a database and two tables called `DownloadLog` and `PostLog`. Those are the SQL statements you can use to generate the tables, but the bot will auto-generate the tables accordingly if not done yet:
 ```sql
-CREATE TABLE public."Log" (
+CREATE TABLE public."DownloadLog" (
 	"uuid" TEXT PRIMARY KEY,
 	"url" TEXT NOT NULL,
 	"title" TEXT,
@@ -50,8 +50,20 @@ CREATE TABLE public."Log" (
 );
 ```
 
+```sql
+CREATE TABLE public."PostLog" (
+	"uuid" TEXT PRIMARY KEY,
+	"startedAt" TIMESTAMP NOT NULL,
+	"finishedAt" TIMESTAMP,
+	"postStatus" TEXT NOT NULL,
+	"errorMsg" TEXT
+);
+```
+
 If this is done you have to grab the file `.env.sample` rename it to `.env` and insert your parameters. For `REDDIT_CLIENT_ID` and `REDDIT_SECRET_TOKEN` you have to insert the two values from your Reddit app as mentioned above.
 For `SUBREDDIT` define the subreddit you want to download the posts from. At the moment only one subreddit at a time is supported.
+
+This bot also supports notifications over Discord. There you can receive notifications if something went wrong or if something went right. If you want to have functionality just insert a Discrod webhook for `DISCORD_WEBHOOK` in the `.env` file. If you don't want to receive notifications just leave the field empty. [Here](https://support.discord.com/hc/en-us/articles/228383668-Intro-to-Webhooks) you can find an instruction how to setup Discord webhooks.
 
 Also, you have to install the libraries from the `Pipfile` or `requirements.txt` file.
 
