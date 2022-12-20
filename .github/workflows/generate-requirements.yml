@@ -6,7 +6,7 @@ jobs:
   generate_requirements:
     runs-on: ubuntu-latest
     permissions:
-      contents: read|write
+      contents: write
     steps:
       - name: Checkout
         uses: actions/checkout@v3
