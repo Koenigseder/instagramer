@@ -10,7 +10,6 @@ import schedule
 import logging
 from dotenv import load_dotenv
 
-
 db_client = database.Database()
 reddit_client = reddit.Reddit()
 instagram_client = instagram.Instagram()
@@ -22,12 +21,13 @@ load_dotenv()
 SUBREDDIT = os.getenv("SUBREDDIT")
 
 
-def download_posts():
+def download_posts(download_only_single_post=False):
     logging.info("Downloading posts...")
     db_client.open_connection()
 
     reddit_client.auth_for_reddit()
-    list_of_posts = reddit_client.get_list_of_urls_and_titles_of_daily_top_posts(SUBREDDIT, db_client)
+    list_of_posts = reddit_client.get_list_of_urls_and_titles_of_daily_top_posts(SUBREDDIT, db_client,
+                                                                                 download_only_single_post)
 
     if len(list_of_posts) > 0:
         for post in list_of_posts:
@@ -35,7 +35,10 @@ def download_posts():
             post_uuid = db_client.insert_download_log_started(url, title)
 
             try:
-                reddit_client.download_post(url, str(date.today()), post_uuid)
+                reddit_client.download_post(url,
+                                            str(date.today() - timedelta(days=1)) if download_only_single_post else str(
+                                                date.today()),
+                                            post_uuid)
                 db_client.insert_download_log_finished(post_uuid)
                 logging.info("Download finished!")
 
@@ -73,6 +76,16 @@ def upload_post():
                 except BaseException as e:
                     db_client.insert_post_log_failed(post_uuid, str(e))
                     logging.error(f"An error occurred while uploading the post to Instagram: {e}")
+
+                    if str(e) == "Uploaded image isn't in an allowed aspect ratio":
+                        logging.info("Getting new post and retrying...")
+
+                        for item in listdir(path):
+                            if file.split(".")[0] in item:
+                                os.remove(os.path.join(path, item))
+
+                        download_posts(download_only_single_post=True)
+                        upload_post()
 
                 db_client.close_connection()
                 break
