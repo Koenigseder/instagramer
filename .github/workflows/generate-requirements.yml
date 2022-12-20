@@ -1,0 +1,33 @@
+name: Generate requirements.txt
+on:
+  pull_request:
+
+jobs:
+  generate_requirements:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.head_ref }}
+
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install pipenv
+        run: |
+          pip install pipenv
+
+      - name: Generate requirements.txt
+        run: |
+          pipenv requirements > src/requirements.txt
+
+      - name: Commit requirements.txt
+        uses: stefanzweifel/git-auto-commit-action@v4
+        with:
+          commit_message: Update requirements.txt
+          file_pattern: 'src/requirements.txt'
