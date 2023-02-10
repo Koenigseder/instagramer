@@ -20,7 +20,10 @@ class Discord:
         self.webhook.add_embed(embed)
 
     def send_message(self):
-        response = self.webhook.execute()
-        if response.ok:
-            logging.info("Message sent")
-        return response
+        try:
+            response = self.webhook.execute()
+            if response.ok:
+                logging.info("Message sent")
+            return response
+        except BaseException as e:
+            logging.error(f"Message could not be sent: {e}")
