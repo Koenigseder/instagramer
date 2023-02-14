@@ -1,8 +1,8 @@
+import os
+
+from dotenv import load_dotenv
 from instagrapi import Client
 import moviepy.editor as mp
-import os
-from dotenv import load_dotenv
-
 
 load_dotenv()
 

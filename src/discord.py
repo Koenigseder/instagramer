@@ -1,4 +1,5 @@
 import logging
+
 from discord_webhook import DiscordWebhook, DiscordEmbed
 
 
@@ -23,7 +24,8 @@ class Discord:
         try:
             response = self.webhook.execute()
             if response.ok:
-                logging.info("Message sent")
+                logging.info("Discord message sent!")
             return response
+
         except BaseException as e:
             logging.error(f"Message could not be sent: {e}")
