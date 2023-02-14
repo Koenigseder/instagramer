@@ -8,9 +8,10 @@ requests = "*"
 instagrapi = "*"
 moviepy = "*"
 psycopg2-binary = "*"
-schedule = "*"
 python-dotenv = "*"
 discord-webhook = "*"
+flask = "*"
+gunicorn = "*"
 
 [dev-packages]
 
