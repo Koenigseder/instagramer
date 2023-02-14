@@ -1,10 +1,11 @@
+from datetime import datetime
 import logging
+import os
+import uuid
+
+from dotenv import load_dotenv
 import psycopg2
 import psycopg2.extras
-import uuid
-from datetime import datetime
-from dotenv import load_dotenv
-import os
 
 load_dotenv()
 
@@ -26,9 +27,11 @@ class Database:
     def open_connection(self) -> None:
         try:
             self.conn = psycopg2.connect(
-                f"host={HOSTNAME} port={PORT} dbname={DBNAME} user={USERNAME} password={PASSWORD}")
+                f"host={HOSTNAME} port={PORT} dbname={DBNAME} user={USERNAME} password={PASSWORD}"
+            )
         except BaseException as e:
-            print(f"Connection to the database {DBNAME} on host {HOSTNAME} with user {USERNAME} failed. Reason: {e}")
+            logging.error(
+                f"Connection to the database {DBNAME} on host {HOSTNAME} with user {USERNAME} failed. Reason: {e}")
 
     def close_connection(self) -> None:
         self.conn.close()
