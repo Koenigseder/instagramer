@@ -1,15 +1,17 @@
-import os
-import uuid
 from datetime import timedelta, date
-import database
-import reddit
-import instagram
-import time
-import discord
-from os import listdir
-import schedule
 import logging
+import os
+from os import listdir
+import shutil
+import uuid
+
 from dotenv import load_dotenv
+import flask
+
+import database
+import discord
+import instagram
+import reddit
 
 logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)
 
@@ -17,6 +19,7 @@ load_dotenv()
 SUBREDDIT = os.getenv("SUBREDDIT")
 DISCORD_WEBHOOK = None if os.getenv("DISCORD_WEBHOOK").strip() == "" else os.getenv("DISCORD_WEBHOOK")
 
+app = flask.Flask(__name__)
 db_client = database.Database()
 reddit_client = reddit.Reddit()
 instagram_client = instagram.Instagram()
@@ -27,12 +30,26 @@ SUCCESS_COLOR = "03a306"
 ERROR_COLOR = "a30303"
 
 
-def download_posts(download_only_single_post=False):
+@app.route("/download-posts", methods=["POST"])
+def download_posts(download_only_single_post=False) -> flask.Response:
+    should_backfill: bool = True if flask.request.args.get("backfill") == "true" else False
+
     logging.info("Downloading posts...")
     db_client.open_connection()
 
-    reddit_client.auth_for_reddit()
-    list_of_posts = reddit_client.get_list_of_urls_and_titles_of_daily_top_posts(SUBREDDIT, db_client,
+    logged_in_to_reddit: bool = False
+    retries_to_login_remaining: int = 3
+
+    while not logged_in_to_reddit and retries_to_login_remaining > 3:
+        logged_in_to_reddit = reddit_client.auth_for_reddit()
+        if not logged_in_to_reddit:
+            retries_to_login_remaining -= 1
+
+    if not logged_in_to_reddit:
+        return flask.Response(status=408)  # Timeout
+
+    list_of_posts = reddit_client.get_list_of_urls_and_titles_of_daily_top_posts(SUBREDDIT,
+                                                                                 db_client,
                                                                                  download_only_single_post)
 
     error_count = 0
@@ -43,10 +60,11 @@ def download_posts(download_only_single_post=False):
             post_uuid = db_client.insert_download_log_started(url, title)
 
             try:
-                reddit_client.download_post(url,
-                                            str(date.today() - timedelta(days=1)) if download_only_single_post else str(
-                                                date.today()),
-                                            post_uuid)
+                reddit_client.download_post(
+                    url,
+                    str(date.today() - timedelta(days=1)) if (download_only_single_post or should_backfill) else str(
+                        date.today()),
+                    post_uuid)
                 db_client.insert_download_log_finished(post_uuid)
                 logging.info("Download finished!")
 
@@ -70,8 +88,11 @@ def download_posts(download_only_single_post=False):
                                  SUCCESS_COLOR if error_count <= 0 else ERROR_COLOR)
         discord_client.send_message()
 
+    return flask.Response(status=200)
 
-def upload_post():
+
+@app.route("/upload-post", methods=["POST"])
+def upload_post() -> flask.Response:
     logging.info("Uploading post to Instagram...")
     folder = str(date.today() - timedelta(days=1))
     path = os.path.join(os.pardir, "resources", folder)
@@ -124,13 +145,18 @@ def upload_post():
     else:
         logging.warning("No such directory!")
 
+    return flask.Response(status=200)
 
-def remove_dir():
+
+@app.route("/remove-dir", methods=["DELETE"])
+def remove_dir() -> flask.Response:
+    folder_name: str = flask.request.args.get("folder")
+
     logging.info("Removing old directory...")
     try:
-        folder = str(date.today() - timedelta(days=2))
+        folder = folder_name if folder_name else str(date.today() - timedelta(days=2))
         path = os.path.join(os.pardir, "resources", folder)
-        os.rmdir(path)
+        shutil.rmtree(path)
         logging.info("Removed old directory!")
 
     except BaseException as e:
@@ -142,30 +168,21 @@ def remove_dir():
                                      ERROR_COLOR)
             discord_client.send_message()
 
+    return flask.Response(status=200)
 
-schedule.every().day.at("22:00").do(download_posts)
 
-schedule.every().day.at("23:00").do(remove_dir)
-
-schedule.every().day.at("06:00").do(upload_post)
-schedule.every().day.at("09:00").do(upload_post)
-schedule.every().day.at("12:00").do(upload_post)
-schedule.every().day.at("15:00").do(upload_post)
-schedule.every().day.at("18:00").do(upload_post)
-schedule.every().day.at("21:00").do(upload_post)
+@app.route("/health-check", methods=["GET"])
+def health_check():
+    return {"message": "Instagramer is up and running"}
 
 
 def start_instagramer():
     db_client.configure_db()
 
     logging.info("### Instagramer started! ###")
-    while True:
-        schedule.run_pending()
-        time.sleep(30)
+
+    app.run(debug=False, host="0.0.0.0", port=int(os.getenv("PORT", 8080)))
 
 
 if __name__ == "__main__":
     start_instagramer()
-    # download_posts()
-    # upload_post()
-    # remove_dir()

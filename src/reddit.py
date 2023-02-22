@@ -1,9 +1,12 @@
-import uuid
-import requests.auth
-import urllib.request
-from database import Database
-import os
 from dotenv import load_dotenv
+import logging
+import os
+import uuid
+import urllib.request
+
+import requests.auth
+
+from database import Database
 
 load_dotenv()
 
@@ -19,7 +22,7 @@ class Reddit:
     def __init__(self):
         self.headers = None
 
-    def auth_for_reddit(self):
+    def auth_for_reddit(self) -> bool:
         try:
             auth = requests.auth.HTTPBasicAuth(CLIENT_ID, SECRET_TOKEN)
 
@@ -35,28 +38,35 @@ class Reddit:
             token = res_auth.json()['access_token']
 
             self.headers = {**self.headers, **{'Authorization': f"bearer {token}"}}
+            return True  # Stands for success -> Client could log in to Reddit
 
         except BaseException as e:
-            print(f"An error occurred for auth to Reddit: {e}")
+            logging.error(f"An error occurred for auth to Reddit: {e}")
+            return False  # Stands for failure -> Client could not log in to Reddit
 
     def get_list_of_urls_and_titles_of_daily_top_posts(self, subreddit: str, db_client: Database,
-                                                       get_only_single_post=False) -> list[tuple[str, str]]:
-        res = requests.get(f"https://oauth.reddit.com/{subreddit}/top?t=day", headers=self.headers)
+                                                       get_only_single_post=False) -> list[tuple[str, str]] | None:
+        try:
+            res = requests.get(f"https://oauth.reddit.com/{subreddit}/top?t=day", headers=self.headers)
 
-        list_of_posts: list[tuple[str, str]] = []
-        number_of_posts: int = 0
-        for post in res.json()["data"]["children"]:
-            if "url_overridden_by_dest" in post["data"] and "title" in post["data"]:
-                if post['data']['url_overridden_by_dest'].endswith(".gif") \
-                        or post['data']['url_overridden_by_dest'].endswith(".mp4") \
-                        or post['data']['url_overridden_by_dest'].endswith(".jpg"):
-                    if not db_client.was_this_post_already_downloaded(post['data']['url_overridden_by_dest']):
-                        list_of_posts.append((post['data']['url_overridden_by_dest'], post['data']['title']))
-                        number_of_posts += 1
-                        if number_of_posts >= (1 if get_only_single_post else POSTS_TO_DOWNLOAD):
-                            break
+            list_of_posts: list[tuple[str, str]] = []
+            number_of_posts: int = 0
+            for post in res.json()["data"]["children"]:
+                if "url_overridden_by_dest" in post["data"] and "title" in post["data"]:
+                    if post['data']['url_overridden_by_dest'].endswith(".gif") \
+                            or post['data']['url_overridden_by_dest'].endswith(".mp4") \
+                            or post['data']['url_overridden_by_dest'].endswith(".jpg"):
+                        if not db_client.was_this_post_already_downloaded(post['data']['url_overridden_by_dest']):
+                            list_of_posts.append((post['data']['url_overridden_by_dest'], post['data']['title']))
+                            number_of_posts += 1
+                            if number_of_posts >= (1 if get_only_single_post else POSTS_TO_DOWNLOAD):
+                                break
 
-        return list_of_posts
+            return list_of_posts
+
+        except BaseException as e:
+            logging.error(f"An error occurred while getting a list of posts from Reddit: {e}")
+            return None
 
     def download_post(self, url: str, folder: str, post_uuid: uuid.UUID):
         resource_path = os.path.join(os.pardir, "resources")
