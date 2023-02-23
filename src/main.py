@@ -18,6 +18,7 @@ logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)
 load_dotenv()
 SUBREDDIT = os.getenv("SUBREDDIT")
 DISCORD_WEBHOOK = None if os.getenv("DISCORD_WEBHOOK").strip() == "" else os.getenv("DISCORD_WEBHOOK")
+os.environ["IMAGEIO_FFMPEG_EXE"] = "/usr/bin/ffmpeg"  # Sometimes necessary for Linux
 
 app = flask.Flask(__name__)
 db_client = database.Database()
