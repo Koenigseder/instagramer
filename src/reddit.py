@@ -41,7 +41,7 @@ class Reddit:
             return True  # Stands for success -> Client could log in to Reddit
 
         except BaseException as e:
-            logging.error(f"An error occurred for auth to Reddit: {e}")
+            logging.warning(f"An error occurred for auth to Reddit: {e}")
             return False  # Stands for failure -> Client could not log in to Reddit
 
     def get_list_of_urls_and_titles_of_daily_top_posts(self, subreddit: str, db_client: Database,

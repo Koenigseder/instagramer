@@ -29,21 +29,25 @@ class Instagram:
             return True  # Stands for success -> Client was able to log in
 
         except BaseException as e:
-            logging.error(f"An error occurred while logging in to Instagram: {e}")
+            logging.warning(f"An error occurred while logging in to Instagram: {e}")
             return False  # Stands for failure -> Client was not able to log in
 
-    def upload_to_instagram(self, folder: str, filename: str, caption: str) -> bool:
+    def upload_to_instagram(self, folder: str, filename: str, caption: str) -> tuple[bool, str]:
 
         logged_in: bool = False
         tries_to_login_remaining: int = 3
 
         while not logged_in and tries_to_login_remaining > 0:
+            logging.info("Trying to log in to Instagram...")
             logged_in = self.login()
             if not logged_in:
                 tries_to_login_remaining -= 1
 
         if not logged_in:
-            return False  # Stands for failure -> After 3 attempts the client was not able to log in
+            logging.error("Could not log in to Instagram!")
+            return False, "Could not log in to Instagram"  # Stands for failure -> After 3 attempts the client was not able to log in
+
+        logging.info("Logged in to Instagram!")
 
         path = os.path.join(os.pardir, "resources", folder, filename)
 
@@ -59,8 +63,8 @@ class Instagram:
             elif filename.endswith(".jpg"):
                 self.client.photo_upload(path, caption)
 
-            return True  # Stand for success -> Post was uploaded
+            return True, ""  # Stand for success -> Post was uploaded
 
         except BaseException as e:
             logging.error(f"An error occurred while uploading a post to Instagram: {e}")
-            return False  # Stands for failure -> Post could not be uploaded
+            return False, str(e)  # Stands for failure -> Post could not be uploaded

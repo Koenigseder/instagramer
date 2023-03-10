@@ -40,6 +40,7 @@ def configure_db() -> flask.Response:
         logging.error(f"Error while configuring database: {e}")
         return flask.Response(status=500)
 
+
 @app.route("/download-posts", methods=["POST"])
 def download_posts(download_only_single_post=False) -> flask.Response:
     should_backfill: bool = True if flask.request.args.get("backfill") == "true" else False
@@ -50,13 +51,17 @@ def download_posts(download_only_single_post=False) -> flask.Response:
     logged_in_to_reddit: bool = False
     retries_to_login_remaining: int = 3
 
-    while not logged_in_to_reddit and retries_to_login_remaining > 3:
+    while not logged_in_to_reddit and retries_to_login_remaining > 0:
+        logging.info("Trying to log in to Reddit...")
         logged_in_to_reddit = reddit_client.auth_for_reddit()
         if not logged_in_to_reddit:
             retries_to_login_remaining -= 1
 
     if not logged_in_to_reddit:
+        logging.error("Could not log in to Reddit!")
         return flask.Response(status=408)  # Timeout
+
+    logging.info("Logged in to Reddit!")
 
     list_of_posts = reddit_client.get_list_of_urls_and_titles_of_daily_top_posts(SUBREDDIT,
                                                                                  db_client,
@@ -118,7 +123,11 @@ def upload_post() -> flask.Response:
                 try:
                     caption = db_client.get_title_of_post(post_uuid)
 
-                    instagram_client.upload_to_instagram(folder, file, caption)
+                    upload_successful, exception = instagram_client.upload_to_instagram(folder, file, caption)
+
+                    if not upload_successful:
+                        raise Exception(exception)
+
                     for item in listdir(path):
                         if file.split(".")[0] in item:
                             os.remove(os.path.join(path, item))
