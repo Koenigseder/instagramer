@@ -31,6 +31,15 @@ SUCCESS_COLOR = "03a306"
 ERROR_COLOR = "a30303"
 
 
+@app.route("/configure-db", methods=["POST"])
+def configure_db() -> flask.Response:
+    try:
+        db_client.configure_db()
+        return flask.Response(status=200)
+    except BaseException as e:
+        logging.error(f"Error while configuring database: {e}")
+        return flask.Response(status=500)
+
 @app.route("/download-posts", methods=["POST"])
 def download_posts(download_only_single_post=False) -> flask.Response:
     should_backfill: bool = True if flask.request.args.get("backfill") == "true" else False
@@ -178,10 +187,7 @@ def health_check():
 
 
 def start_instagramer():
-    db_client.configure_db()
-
     logging.info("### Instagramer started! ###")
-
     app.run(debug=False, host="0.0.0.0", port=int(os.getenv("PORT", 8080)))
 
 
