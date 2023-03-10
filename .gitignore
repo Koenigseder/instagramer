@@ -13,6 +13,9 @@ resources/
 # IntelliJ
 .idea/
 
+# Auto-generated files
+session.json
+
 # Distribution / packaging
 .Python
 build/
